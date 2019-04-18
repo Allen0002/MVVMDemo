@@ -13,7 +13,7 @@ import RxCocoa
 class ServerAPI {
     /// 模拟检查用户名重复
     static func userAvailable(_ username:String) -> Observable<Bool>{
-        let result = Int.random(in: (0...20)) % 5 == 0 ? false : true
+        let result = Int.random(in: (0...20)) % 10 == 0 ? false : true
         return Observable.just(result).catchErrorJustReturn(false)
     }
     /// 模拟登录成功

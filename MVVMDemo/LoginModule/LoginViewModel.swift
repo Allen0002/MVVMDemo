@@ -11,36 +11,40 @@ import RxSwift
 import RxCocoa
 
 class LoginViewModel{
-    let invalidationUsername: Observable<ValidationResult>
-    let invalidationPassword: Observable<ValidationResult>
-    let invalidationRepeatPassword: Observable<ValidationResult>
+    let invalidationUsername: Driver<ValidationResult>
+    let invalidationPassword: Driver<ValidationResult>
+    let invalidationRepeatPassword: Driver<ValidationResult>
     
-    let loginEnable: Observable<Bool>
-    let loginTaps: Observable<LoginModel>
+    let loginEnable: Driver<Bool>
+    let loginTaps: Driver<LoginModel>
     
-    init(username:Observable<String>,
-         password: Observable<String>,
-         repeatPassword: Observable<String>,
-         login:Observable<Void>
+    init(username:Driver<String>,
+         password: Driver<String>,
+         repeatPassword: Driver<String>,
+         login:Driver<Void>
          ) {
-        invalidationUsername = username.flatMapLatest({ username in
+        
+        invalidationUsername = username.flatMapLatest { username in
             return ValidationImplementation.validationUsername(username)
-        })
-        
-        invalidationPassword = password.flatMapLatest({ pwd in
-            return ValidationImplementation.validationPassword(pwd)
-        })
-        
-        invalidationRepeatPassword = Observable.combineLatest(password, repeatPassword).flatMapLatest({password,repeatPassword in
-            return ValidationImplementation.validationRepeatPassword(password, repeatPwd: repeatPassword)
-        })
-        
-        let usernameAndPassword = Observable.combineLatest(username, password)
-        loginTaps = login.withLatestFrom(usernameAndPassword).flatMapLatest{ name, pwd in
-            return ServerAPI.signUp(name, password: pwd)
+                .asDriver(onErrorJustReturn: .failed(message: "Error"))
         }
         
-        loginEnable = Observable.combineLatest(invalidationUsername, invalidationRepeatPassword, invalidationRepeatPassword).map({ username,password,repeatPassword in
+        invalidationPassword = password.flatMapLatest({ pwd in
+            return ValidationImplementation.validationPassword(pwd).asDriver(onErrorJustReturn: .failed(message: "Error"))
+        })
+        
+        invalidationRepeatPassword = Driver.combineLatest(password, repeatPassword).flatMapLatest({password,repeatPassword in
+            return ValidationImplementation.validationRepeatPassword(password, repeatPwd: repeatPassword).asDriver(onErrorJustReturn: .failed(message: "Error"))
+        })
+        
+        let usernameAndPassword = Driver.combineLatest(username, password)
+        loginTaps = login.withLatestFrom(usernameAndPassword).flatMapLatest{ (arg) -> SharedSequence<DriverSharingStrategy, LoginModel> in
+            
+            let (_, _) = arg
+            return ServerAPI.signUp(arg.0, password: arg.1).asDriver(onErrorJustReturn: LoginModel.init(statusCode: 404, info: "error"))
+        }
+        
+        loginEnable = Driver.combineLatest(invalidationUsername, invalidationRepeatPassword, invalidationRepeatPassword).map({ username,password,repeatPassword in
             return username.isValid && password.isValid && repeatPassword.isValid
         })
     }

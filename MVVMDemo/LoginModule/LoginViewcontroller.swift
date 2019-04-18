@@ -16,15 +16,15 @@ class LoginViewcontroller: BaseViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        let model = LoginViewModel.init(username: usernameTextFeild.rx.text.orEmpty.asObservable(), password: passwordTextFeild.rx.text.orEmpty.asObservable(), repeatPassword: repeatPasswordTextField.rx.text.orEmpty.asObservable(),login:signupButton.rx.tap.asObservable())
+        let model = LoginViewModel.init(username: usernameTextFeild.rx.text.orEmpty.asDriver(), password: passwordTextFeild.rx.text.orEmpty.asDriver(), repeatPassword: repeatPasswordTextField.rx.text.orEmpty.asDriver(),login:signupButton.rx.tap.asDriver())
         
-        model.invalidationUsername.bind(to: usernameValidationLabel.rx.invalidationResult).disposed(by: disposeBag)
-        model.invalidationPassword.bind(to: passwordValidationLabel.rx.invalidationResult).disposed(by: disposeBag)
-        model.invalidationRepeatPassword.bind(to: repeatPasswordValidationLabel.rx.invalidationResult).disposed(by: disposeBag)
-        model.loginEnable.bind(to: signupButton.rx.signUpEable).disposed(by: disposeBag)
+        model.invalidationUsername.drive(usernameValidationLabel.rx.invalidationResult).disposed(by: disposeBag)
+        model.invalidationPassword.drive(passwordValidationLabel.rx.invalidationResult).disposed(by: disposeBag)
+        model.invalidationRepeatPassword.drive(repeatPasswordValidationLabel.rx.invalidationResult).disposed(by: disposeBag)
+        model.loginEnable.drive(signupButton.rx.signUpEable).disposed(by: disposeBag)
         
-        model.loginTaps.bind(to: tipLabel.rx.callback).disposed(by: disposeBag)
-        model.loginTaps.subscribe(onNext: {result in
+        model.loginTaps.drive(tipLabel.rx.callback).disposed(by: disposeBag)
+        model.loginTaps.drive(onNext: {result in
             print(result)
         }).disposed(by: disposeBag)
     }
